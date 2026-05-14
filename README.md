@@ -16,6 +16,7 @@ A simple REST API built using **FastAPI** and **MongoDB Atlas** to manage invent
 
 ## Project Structure
 
+```bash
 Inventory_api/
 │
 ├── main.py
@@ -31,12 +32,14 @@ Inventory_api/
 
 ### 1. Clone the project
 
+```bash
 git clone <repo-url>
 cd Inventory_api
 ```
 
 ### 2. Create virtual environment
 
+```bash
 python -m venv venv
 ```
 
