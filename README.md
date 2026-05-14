@@ -147,4 +147,3 @@ FastAPI provides built-in docs:
 * Duplicate entries return `409 Conflict`
 * MongoDB stores the provided `id` as `_id`
 
-Source file: 
