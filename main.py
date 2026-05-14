@@ -1,13 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pymongo import MongoClient
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from typing import Optional, List
 import os
 
 load_dotenv()
 
-client = MongoClient(os.getenv("MONGO_URI"), tlsAllowInvalidCertificates=True, tlsAllowInvalidHostnames=True)
-col = client[os.getenv("DB_NAME")]["items"]
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client[os.getenv("DB_NAME")]
+col = db["items"]
 
 app = FastAPI()
 
@@ -16,31 +18,96 @@ class Item(BaseModel):
     name: str
     quantity: int
     category: str
+    price: float
+    available: bool
 
-def to_item(doc):
-    return Item(id=doc["_id"], name=doc["name"], quantity=doc["quantity"], category=doc["category"])
+def stock_status(quantity):
 
-@app.post("/items", status_code=201)
+    if quantity > 10:
+        return "Good stock"
+
+    elif quantity > 0:
+        return "Low stock"
+
+    else:
+        return "Out of stock"
+
+
+# -------------------------
+# Create Item
+# -------------------------
+
+@app.post("/items")
 def create_item(item: Item):
+
+    # Check duplicate ID
     if col.find_one({"_id": item.id}):
-        raise HTTPException(409, f"ID '{item.id}' already exists")
-    if col.find_one({"name": item.name}):
-        raise HTTPException(409, f"Name '{item.name}' already exists")
-    d = item.model_dump()
-    d["_id"] = d.pop("id")
-    col.insert_one(d)
-    return {"message": "Item created", "item": to_item(col.find_one({"_id": item.id}))}
+        raise HTTPException(409, "Item ID already exists")
 
-@app.get("/items/id/{item_id}", response_model=Item)
-def get_by_id(item_id: int):
-    doc = col.find_one({"_id": item_id})
-    if not doc:
-        raise HTTPException(404, f"ID '{item_id}' not found")
-    return to_item(doc)
+    data = item.model_dump()
 
-@app.get("/items/name/{name}", response_model=Item)
-def get_by_name(name: str):
-    doc = col.find_one({"name": name})
-    if not doc:
-        raise HTTPException(404, f"Name '{name}' not found")
-    return to_item(doc)
+    # Store id as _id
+    data["_id"] = data.pop("id")
+
+    col.insert_one(data)
+
+    return {
+        "message": "Item created"
+    }
+
+
+# @app.get("/items/{item_id}")
+# def get_item(item_id: int):
+
+#     item = col.find_one({"_id": item_id})
+
+#     if not item:
+#         raise HTTPException(404, "Item not found")
+
+#     return {
+#         "id": item["_id"],
+#         "name": item["name"],
+#         "category": item["category"],
+#         "quantity": item["quantity"],
+#         "price": item["price"],
+#         "available": item["available"],
+#         "stock_status": stock_status(item["quantity"])
+#     }
+
+
+@app.get("/items")
+def filter_items(
+    category: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    item_id: Optional[int] = Query(None)
+):
+
+    query = {}
+
+    if category:
+        query["category"] = category
+
+    if name:
+        query["name"] = name
+
+    if item_id:
+        query["_id"] = item_id
+
+    items = []
+
+    for item in col.find(query):
+
+        items.append({
+            "id": item["_id"],
+            "name": item["name"],
+            "category": item["category"],
+            "quantity": item["quantity"],
+            "price": item["price"],
+            "available": item["available"],
+            "stock_status": stock_status(item["quantity"])
+        })
+
+    if not items:
+        raise HTTPException(404, "No items found")
+
+    return items
