@@ -51,12 +51,6 @@ Activate it:
 venv\Scripts\activate
 ```
 
-**Mac/Linux**
-
-```bash
-source venv/bin/activate
-```
-
 ### 3. Install dependencies
 
 ```bash
@@ -70,9 +64,6 @@ Create a `.env` file:
 ```env
 MONGO_URI=your_mongodb_uri
 DB_NAME=inventory_db
-SECRET_KEY=your_secret_key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 ## Run the Server
@@ -124,22 +115,11 @@ Example:
 /items/name/Laptop
 ```
 
-## JWT Authentication
-
-* Tokens are generated using `jwt_handler.py`
-* Protected routes use `require_token`
-* Token must be passed in headers:
-
-```bash
-Authorization: Bearer <token>
-```
-
 ## API Documentation
 
 FastAPI provides built-in docs:
 
 * Swagger UI → `http://127.0.0.1:8000/docs`
-* ReDoc → `http://127.0.0.1:8000/redoc`
 
 ## Notes
 
